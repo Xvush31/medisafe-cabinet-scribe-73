@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Patient, Ordonnance } from '@/types/medical';
 import PatientForm from '@/components/PatientForm';
 import PatientList from '@/components/PatientList';
@@ -10,11 +10,45 @@ import { Users, FileText, Stethoscope } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [ordonnances, setOrdonnances] = useState<Ordonnance[]>([]);
+  const [patients, setPatients] = useState<Patient[]>(() => {
+    try {
+      const savedPatients = localStorage.getItem('patients');
+      if (savedPatients) {
+        const parsed = JSON.parse(savedPatients) as Patient[];
+        return parsed.map(p => ({ ...p, dateInscription: new Date(p.dateInscription) }));
+      }
+      return [];
+    } catch (e) {
+      console.error("Failed to load patients from local storage", e);
+      return [];
+    }
+  });
+
+  const [ordonnances, setOrdonnances] = useState<Ordonnance[]>(() => {
+    try {
+      const savedOrdonnances = localStorage.getItem('ordonnances');
+      if (savedOrdonnances) {
+        const parsed = JSON.parse(savedOrdonnances) as Ordonnance[];
+        return parsed.map(o => ({ ...o, dateOrdonnance: new Date(o.dateOrdonnance) }));
+      }
+      return [];
+    } catch (e) {
+      console.error("Failed to load ordonnances from local storage", e);
+      return [];
+    }
+  });
+
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [currentView, setCurrentView] = useState<'patients' | 'ordonnance'>('patients');
   const { toast } = useToast();
+
+  useEffect(() => {
+    localStorage.setItem('patients', JSON.stringify(patients));
+  }, [patients]);
+
+  useEffect(() => {
+    localStorage.setItem('ordonnances', JSON.stringify(ordonnances));
+  }, [ordonnances]);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'dateInscription'>) => {
     const newPatient: Patient = {
