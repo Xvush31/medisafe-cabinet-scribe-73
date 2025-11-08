@@ -12,12 +12,16 @@ export interface Patient {
   dateInscription: Date;
 }
 
+export interface Medicament {
+  nom: string;
+  posologie: string;
+  duree: string;
+}
+
 export interface Ordonnance {
   id: string;
   patientId: string;
   dateOrdonnance: Date;
-  nouveauTraitement: string;
-  posologie: string;
-  duree: string;
+  medicaments: Medicament[];
   notes?: string;
 }

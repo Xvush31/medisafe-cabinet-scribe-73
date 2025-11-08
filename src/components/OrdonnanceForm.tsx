@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Patient, Ordonnance } from '@/types/medical';
-import { FileText, ArrowLeft, User, Calendar } from 'lucide-react';
+import { Patient, Ordonnance, Medicament } from '@/types/medical';
+import { FileText, ArrowLeft, User, Calendar, Plus, X } from 'lucide-react';
 
 interface OrdonnanceFormProps {
   patient: Patient;
@@ -15,26 +15,54 @@ interface OrdonnanceFormProps {
 }
 
 const OrdonnanceForm: React.FC<OrdonnanceFormProps> = ({ patient, onCreateOrdonnance, onBack }) => {
-  const [formData, setFormData] = useState({
-    nouveauTraitement: '',
-    posologie: '',
-    duree: '',
-    notes: ''
-  });
+  const [medicaments, setMedicaments] = useState<Medicament[]>([
+    { nom: '', posologie: '', duree: '' }
+  ]);
+  const [notes, setNotes] = useState('');
+  const lastInputRef = useRef<HTMLInputElement>(null);
+
+  const addNewMedicamentRow = () => {
+    setMedicaments([...medicaments, { nom: '', posologie: '', duree: '' }]);
+  };
+
+  const removeMedicamentRow = (index: number) => {
+    if (medicaments.length > 1) {
+      setMedicaments(medicaments.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateMedicament = (index: number, field: keyof Medicament, value: string) => {
+    const newMedicaments = [...medicaments];
+    newMedicaments[index][field] = value;
+    setMedicaments(newMedicaments);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const currentMed = medicaments[index];
+      // Ajouter une nouvelle ligne si tous les champs de la ligne actuelle sont remplis
+      if (currentMed.nom && currentMed.posologie && currentMed.duree) {
+        addNewMedicamentRow();
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.nouveauTraitement && formData.posologie && formData.duree) {
+    // Filtrer les médicaments vides
+    const validMedicaments = medicaments.filter(
+      med => med.nom.trim() && med.posologie.trim() && med.duree.trim()
+    );
+    
+    if (validMedicaments.length > 0) {
       onCreateOrdonnance({
         patientId: patient.id,
-        ...formData
+        medicaments: validMedicaments,
+        notes
       });
-      setFormData({
-        nouveauTraitement: '',
-        posologie: '',
-        duree: '',
-        notes: ''
-      });
+      setMedicaments([{ nom: '', posologie: '', duree: '' }]);
+      setNotes('');
     }
   };
 
@@ -102,49 +130,77 @@ const OrdonnanceForm: React.FC<OrdonnanceFormProps> = ({ patient, onCreateOrdonn
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="nouveauTraitement">Nouveau Traitement *</Label>
-              <Textarea
-                id="nouveauTraitement"
-                value={formData.nouveauTraitement}
-                onChange={(e) => setFormData({ ...formData, nouveauTraitement: e.target.value })}
-                required
-                className="mt-1"
-                rows={4}
-                placeholder="Exemple: Paracétamol 1000mg..."
-              />
-            </div>
+              <div className="flex items-center justify-between mb-3">
+                <Label>Médicaments *</Label>
+                <span className="text-sm text-muted-foreground">
+                  Appuyez sur Entrée pour ajouter un nouveau médicament
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {medicaments.map((medicament, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 rounded-lg border bg-muted/20">
+                    <div className="col-span-12 md:col-span-4">
+                      <Input
+                        value={medicament.nom}
+                        onChange={(e) => updateMedicament(index, 'nom', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
+                        placeholder="Nom du médicament"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <Input
+                        value={medicament.posologie}
+                        onChange={(e) => updateMedicament(index, 'posologie', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
+                        placeholder="Posologie (ex: 1cp x3/j)"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="col-span-11 md:col-span-3">
+                      <Input
+                        value={medicament.duree}
+                        onChange={(e) => updateMedicament(index, 'duree', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
+                        placeholder="Durée (ex: 7j)"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="col-span-1 flex items-center justify-center">
+                      {medicaments.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeMedicamentRow(index)}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="posologie">Posologie *</Label>
-                <Input
-                  id="posologie"
-                  value={formData.posologie}
-                  onChange={(e) => setFormData({ ...formData, posologie: e.target.value })}
-                  required
-                  className="mt-1"
-                  placeholder="Exemple: 1 comprimé 3 fois par jour"
-                />
-              </div>
-              <div>
-                <Label htmlFor="duree">Durée du traitement *</Label>
-                <Input
-                  id="duree"
-                  value={formData.duree}
-                  onChange={(e) => setFormData({ ...formData, duree: e.target.value })}
-                  required
-                  className="mt-1"
-                  placeholder="Exemple: 7 jours"
-                />
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addNewMedicamentRow}
+                className="mt-3 w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un médicament
+              </Button>
             </div>
 
             <div>
               <Label htmlFor="notes">Notes supplémentaires</Label>
               <Textarea
                 id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 className="mt-1"
                 rows={3}
                 placeholder="Instructions particulières, contre-indications..."
