@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Patient, Ordonnance } from '@/types/medical';
+import { Patient, Ordonnance, CompteRenduEcho } from '@/types/medical';
 import PatientForm from '@/components/PatientForm';
 import PatientList from '@/components/PatientList';
 import OrdonnanceForm from '@/components/OrdonnanceForm';
 import OrdonnancePrint from '@/components/OrdonnancePrint';
 import PatientFiche from '@/components/PatientFiche';
+import EchoForm from '@/components/EchoForm';
+import EchoPrint from '@/components/EchoPrint';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, FileText, Stethoscope } from 'lucide-react';
@@ -40,9 +42,24 @@ const Index = () => {
     }
   });
 
+  const [echos, setEchos] = useState<CompteRenduEcho[]>(() => {
+    try {
+      const savedEchos = localStorage.getItem('echos');
+      if (savedEchos) {
+        const parsed = JSON.parse(savedEchos) as CompteRenduEcho[];
+        return parsed.map(e => ({ ...e, dateExamen: new Date(e.dateExamen) }));
+      }
+      return [];
+    } catch (e) {
+      console.error("Failed to load echos from local storage", e);
+      return [];
+    }
+  });
+
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance' | 'print' | 'fiche'>('patients');
+  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance' | 'print' | 'fiche' | 'echo' | 'echoPrint'>('patients');
   const [currentOrdonnance, setCurrentOrdonnance] = useState<Ordonnance | null>(null);
+  const [currentEcho, setCurrentEcho] = useState<CompteRenduEcho | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,6 +69,10 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem('ordonnances', JSON.stringify(ordonnances));
   }, [ordonnances]);
+
+  useEffect(() => {
+    localStorage.setItem('echos', JSON.stringify(echos));
+  }, [echos]);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'dateInscription'>) => {
     const newPatient: Patient = {
@@ -81,9 +102,29 @@ const Index = () => {
     });
   };
 
+  const createEcho = (echoData: Omit<CompteRenduEcho, 'id' | 'dateExamen'>) => {
+    const newEcho: CompteRenduEcho = {
+      ...echoData,
+      id: Date.now().toString(),
+      dateExamen: new Date()
+    };
+    setEchos([...echos, newEcho]);
+    setCurrentEcho(newEcho);
+    setCurrentView('echoPrint');
+    toast({
+      title: "Compte Rendu créé",
+      description: "Le compte rendu d'échographie a été créé avec succès.",
+    });
+  };
+
   const selectPatientForOrdonnance = (patient: Patient) => {
     setSelectedPatient(patient);
     setCurrentView('ordonnance');
+  };
+
+  const selectPatientForEcho = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setCurrentView('echo');
   };
 
   const viewPatientFiche = (patient: Patient) => {
@@ -95,6 +136,7 @@ const Index = () => {
     setCurrentView('patients');
     setSelectedPatient(null);
     setCurrentOrdonnance(null);
+    setCurrentEcho(null);
   };
 
   if (currentView === 'fiche' && selectedPatient) {
@@ -102,9 +144,18 @@ const Index = () => {
       <PatientFiche
         patient={selectedPatient}
         onClose={backToPatients}
-        onCreateOrdonnance={() => {
-          setCurrentView('ordonnance');
-        }}
+        onCreateOrdonnance={() => setCurrentView('ordonnance')}
+        onCreateEcho={() => setCurrentView('echo')}
+      />
+    );
+  }
+
+  if (currentView === 'echoPrint' && selectedPatient && currentEcho) {
+    return (
+      <EchoPrint
+        patient={selectedPatient}
+        echo={currentEcho}
+        onClose={backToPatients}
       />
     );
   }
@@ -116,6 +167,28 @@ const Index = () => {
         ordonnance={currentOrdonnance}
         onClose={backToPatients}
       />
+    );
+  }
+
+  if (currentView === 'echo' && selectedPatient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
+        <div className="container mx-auto py-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Stethoscope className="h-8 w-8 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-800">Cabinet Médical</h1>
+            </div>
+            <p className="text-gray-600">Compte Rendu d'Échographie</p>
+          </div>
+          
+          <EchoForm
+            patient={selectedPatient}
+            onCreateEcho={createEcho}
+            onBack={backToPatients}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -172,6 +245,7 @@ const Index = () => {
             <PatientList 
               patients={patients} 
               onSelectPatient={selectPatientForOrdonnance}
+              onSelectPatientForEcho={selectPatientForEcho}
               onViewFiche={viewPatientFiche}
             />
           </TabsContent>

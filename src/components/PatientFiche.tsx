@@ -7,9 +7,10 @@ interface PatientFicheProps {
   patient: Patient;
   onClose: () => void;
   onCreateOrdonnance: () => void;
+  onCreateEcho: () => void;
 }
 
-const PatientFiche: React.FC<PatientFicheProps> = ({ patient, onClose, onCreateOrdonnance }) => {
+const PatientFiche: React.FC<PatientFicheProps> = ({ patient, onClose, onCreateOrdonnance, onCreateEcho }) => {
   const handlePrint = () => {
     window.print();
   };
@@ -25,6 +26,10 @@ const PatientFiche: React.FC<PatientFicheProps> = ({ patient, onClose, onCreateO
         <Button onClick={onCreateOrdonnance} size="lg" className="gap-2 bg-green-600 hover:bg-green-700">
           <FileText className="h-5 w-5" />
           Créer Ordonnance
+        </Button>
+        <Button onClick={onCreateEcho} size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700">
+          <FileText className="h-5 w-5" />
+          Créer Compte Rendu
         </Button>
         <Button onClick={onClose} variant="outline" size="lg" className="gap-2">
           <X className="h-5 w-5" />

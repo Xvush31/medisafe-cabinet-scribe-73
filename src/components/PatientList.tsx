@@ -10,10 +10,11 @@ import { User, Calendar, Weight, MapPin, FileText, Search } from 'lucide-react';
 interface PatientListProps {
   patients: Patient[];
   onSelectPatient: (patient: Patient) => void;
+  onSelectPatientForEcho: (patient: Patient) => void;
   onViewFiche: (patient: Patient) => void;
 }
 
-const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, onViewFiche }) => {
+const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, onSelectPatientForEcho, onViewFiche }) => {
   const [searchTerm, setSearchTerm] = useState('');
   // Filter patients based on search term
   const filteredPatients = patients.filter(patient => {
@@ -118,12 +119,20 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
                 )}
               </div>
               
-              <Button 
-                onClick={() => onSelectPatient(patient)}
-                className="ml-4 bg-green-600 hover:bg-green-700"
-              >
-                Créer Ordonnance
-              </Button>
+              <div className="ml-4 flex flex-col gap-2">
+                <Button 
+                  onClick={() => onSelectPatient(patient)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Créer Ordonnance
+                </Button>
+                <Button 
+                  onClick={() => onSelectPatientForEcho(patient)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Créer Compte Rendu
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
