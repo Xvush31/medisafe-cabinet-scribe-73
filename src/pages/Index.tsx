@@ -4,6 +4,7 @@ import { Patient, Ordonnance } from '@/types/medical';
 import PatientForm from '@/components/PatientForm';
 import PatientList from '@/components/PatientList';
 import OrdonnanceForm from '@/components/OrdonnanceForm';
+import OrdonnancePrint from '@/components/OrdonnancePrint';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, FileText, Stethoscope } from 'lucide-react';
@@ -39,7 +40,8 @@ const Index = () => {
   });
 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance'>('patients');
+  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance' | 'print'>('patients');
+  const [currentOrdonnance, setCurrentOrdonnance] = useState<Ordonnance | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,12 +72,12 @@ const Index = () => {
       dateOrdonnance: new Date()
     };
     setOrdonnances([...ordonnances, newOrdonnance]);
+    setCurrentOrdonnance(newOrdonnance);
+    setCurrentView('print');
     toast({
       title: "Ordonnance créée",
       description: "L'ordonnance a été créée avec succès.",
     });
-    setCurrentView('patients');
-    setSelectedPatient(null);
   };
 
   const selectPatientForOrdonnance = (patient: Patient) => {
@@ -86,7 +88,18 @@ const Index = () => {
   const backToPatients = () => {
     setCurrentView('patients');
     setSelectedPatient(null);
+    setCurrentOrdonnance(null);
   };
+
+  if (currentView === 'print' && selectedPatient && currentOrdonnance) {
+    return (
+      <OrdonnancePrint
+        patient={selectedPatient}
+        ordonnance={currentOrdonnance}
+        onClose={backToPatients}
+      />
+    );
+  }
 
   if (currentView === 'ordonnance' && selectedPatient) {
     return (
