@@ -5,6 +5,7 @@ import PatientForm from '@/components/PatientForm';
 import PatientList from '@/components/PatientList';
 import OrdonnanceForm from '@/components/OrdonnanceForm';
 import OrdonnancePrint from '@/components/OrdonnancePrint';
+import PatientFiche from '@/components/PatientFiche';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, FileText, Stethoscope } from 'lucide-react';
@@ -40,7 +41,7 @@ const Index = () => {
   });
 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance' | 'print'>('patients');
+  const [currentView, setCurrentView] = useState<'patients' | 'ordonnance' | 'print' | 'fiche'>('patients');
   const [currentOrdonnance, setCurrentOrdonnance] = useState<Ordonnance | null>(null);
   const { toast } = useToast();
 
@@ -85,11 +86,28 @@ const Index = () => {
     setCurrentView('ordonnance');
   };
 
+  const viewPatientFiche = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setCurrentView('fiche');
+  };
+
   const backToPatients = () => {
     setCurrentView('patients');
     setSelectedPatient(null);
     setCurrentOrdonnance(null);
   };
+
+  if (currentView === 'fiche' && selectedPatient) {
+    return (
+      <PatientFiche
+        patient={selectedPatient}
+        onClose={backToPatients}
+        onCreateOrdonnance={() => {
+          setCurrentView('ordonnance');
+        }}
+      />
+    );
+  }
 
   if (currentView === 'print' && selectedPatient && currentOrdonnance) {
     return (
@@ -154,6 +172,7 @@ const Index = () => {
             <PatientList 
               patients={patients} 
               onSelectPatient={selectPatientForOrdonnance}
+              onViewFiche={viewPatientFiche}
             />
           </TabsContent>
         </Tabs>

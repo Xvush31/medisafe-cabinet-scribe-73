@@ -1,17 +1,29 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Patient } from '@/types/medical';
-import { User, Calendar, Weight, MapPin, FileText } from 'lucide-react';
+import { User, Calendar, Weight, MapPin, FileText, Search } from 'lucide-react';
 
 interface PatientListProps {
   patients: Patient[];
   onSelectPatient: (patient: Patient) => void;
+  onViewFiche: (patient: Patient) => void;
 }
 
-const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient }) => {
+const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, onViewFiche }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  // Filter patients based on search term
+  const filteredPatients = patients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.nom.toLowerCase().includes(searchLower) ||
+      patient.prenom.toLowerCase().includes(searchLower)
+    );
+  });
+
   if (patients.length === 0) {
     return (
       <Card className="w-full max-w-4xl mx-auto">
@@ -25,8 +37,30 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient }) 
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Liste des Patients ({patients.length})</h2>
-      {patients.map((patient) => (
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Liste des Patients ({filteredPatients.length})</h2>
+      </div>
+      
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Rechercher par nom ou prénom..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 text-lg py-6"
+        />
+      </div>
+
+      {filteredPatients.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">Aucun patient trouvé pour "{searchTerm}"</p>
+          </CardContent>
+        </Card>
+      )}
+      {filteredPatients.map((patient) => (
         <Card key={patient.id} className="hover:shadow-lg transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
@@ -34,7 +68,10 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient }) 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <User className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-800">
+                    <h3 
+                      className="text-lg font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
+                      onClick={() => onViewFiche(patient)}
+                    >
                       {patient.prenom} {patient.nom}
                     </h3>
                   </div>
